@@ -1,0 +1,8 @@
+db.sqlite3
+manage.py
+media/
+project/settings.py
+__pycache__/
+*.pyc
+*/migrations/*
+*.log
