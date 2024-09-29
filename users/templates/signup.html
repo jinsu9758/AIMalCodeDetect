@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Sign up</title>
+  <link rel='stylesheet' href='https://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css'>
+  <link rel="stylesheet" href="{% static 'users/css/style2.css' %}">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="wrapper">
+    <form class="form-signin">       
+      <h2 class="form-signin-heading" style="text-align: center;"><b>Sign up</b></h2>
+      <input type="text" class="form-control" name="nickname" placeholder="NIckname" required="" autofocus="" />
+      <br>
+      <input type="text" class="form-control" name="username" placeholder="Email Address" required="" autofocus="" />
+      <br>
+      <input type="password" class="form-control" name="password1" placeholder="Password" required=""/>     
+      <br>
+      <input type="password" class="form-control" id="confirm-password" name="password2" placeholder="Confirm Password" required=""/>     
+      <!-- <label class="checkbox">
+        <input type="checkbox" value="remember-me" id="rememberMe" name="rememberMe"> Remember me
+      </label>
+    -->
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>   
+    </form>
+  </div>
+<!-- partial -->
+  
+</body>
+</html>
