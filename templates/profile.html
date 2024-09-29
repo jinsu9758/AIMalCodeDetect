@@ -1,0 +1,23 @@
+<div class="container my-3"></div>
+    <form method="post" action="{% url 'users:profile' %}">
+        {% csrf_token %}
+        {% include "form_errors.html" %}
+        <h3>닉네임 : {{ request.user.nickname }}</h3>
+        <div class="mb-3"></div>
+            <label for="old_password">기존 비밀번호</label>
+            <input type="password" class="form-control" name="old_password" id="old_password"
+                   value="{{ form.old_password.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="new_password1">변경할 비밀번호</label>
+            <input type="password" class="form-control" name="new_password1" id="new_password1"
+                   value="{{ form.new_password1.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="new_password2">비밀번호 확인</label>
+            <input type="password" class="form-control" name="new_password2" id="new_password2"
+                   value="{{ form.new_password2.value|default_if_none:'' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">비밀번호 변경</button>
+    </form>
+</div>
