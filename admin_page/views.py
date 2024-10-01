@@ -9,6 +9,7 @@ from django.conf import settings
 import boto3
 import json
 
+
 # aws s3 연결
 s3 = boto3.client(
     's3',
@@ -46,9 +47,10 @@ def delete_files_bucket(bucket):
         print(f"S3 버킷에서 파일을 삭제하는 중 오류가 발생했습니다: {str(e)}")
 
 
-# 파일 업로드 기능 → 업로드 여부에 따라서 alert 발생
+
+# 파일 분석 기능 → 업로드 여부에 따라서 alert 발생
 @csrf_exempt
-def file_upload_view(request):
+def file_analysis_view(request):
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -62,7 +64,7 @@ def file_upload_view(request):
                     # 파일 업로드 시, pre_bucket 안에 파일 삭제 후 파일 업로드
                     delete_files_bucket(settings.AWS_STORAGE_PRE_BUCKET_NAME)
                     s3.upload_fileobj(uploaded_file, settings.AWS_STORAGE_PRE_BUCKET_NAME, uploaded_file.name)
-                    request.session['message'] = "정상적으로 업로드 되었습니다!"
+                    request.session['message'] = "잠시후에 새로고침을 해주세요"
                     return redirect('admin_page')
 
                 except Exception as e:
@@ -74,6 +76,7 @@ def file_upload_view(request):
 
     else:
         form = FileUploadForm()
+
 
 
 # api를 이용해 파일에 대한 AI 결과값을 받음.
@@ -89,27 +92,6 @@ def recieve_result(request):
             if mal_rate is not None and filename is not None:
                 MaliciousResult.objects.all().delete()
                 result = MaliciousResult.objects.create(filename=filename, mal_rate=mal_rate)
-                
-                pre_bucket = settings.AWS_STORAGE_PRE_BUCKET_NAME
-                fore_bucket = settings.AWS_STORAGE_FORE_BUCKET_NAME
-                
-                # 결과 값의 mal_rate를 검사했을때 정상 파일이면, fore_bucket에다가 파일 옮기기
-                if mal_rate >=60: # 악성 파일
-                    pass
-                else: # 정상 파일
-                    try:
-                        delete_files_bucket(fore_bucket)
-                        copy_source = {
-                            'Bucket': pre_bucket,
-                            'Key': filename
-                        }
-                        s3.copy(copy_source, fore_bucket, filename)
-                        delete_files_bucket(pre_bucket)
-                        return JsonResponse({'message': 'File moved successfully.'})
-                    except Exception as e:
-                        return JsonResponse({'error': str(e)}, status=500)
-
-
                 return JsonResponse({'status': 'success', 'id': result.id}, status=201)
             else:
                 return JsonResponse({'error': 'mal_rate not provided'}, status=400)
@@ -118,6 +100,57 @@ def recieve_result(request):
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@csrf_exempt
+def confirm_upload_view(request):
+    if request.method == "POST":
+        try:
+            # JavaScript에서 보낸 JSON 데이터를 파싱
+            data = json.loads(request.body)
+            mal_rate = data.get('mal_rate')
+
+            if mal_rate is not None:
+                # mal_rate가 10 이하일 때 자동 파일 업로드 로직
+                if mal_rate <= 10:
+                    return handle_file_upload(request)
+                # mal_rate가 90 이상일 때 업로드 불가 응답
+                elif mal_rate >= 90:
+                    return JsonResponse({'success': False, 'error': 'mal_rate is too high'})
+                # 10 < mal_rate < 90 사이일 때 사용자 결정을 이미 JavaScript에서 받았으므로 바로 업로드
+                else:
+                    return handle_file_upload(request)
+            else:
+                return JsonResponse({'success': False, 'error': 'mal_rate is missing'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+# 파일 업로드 로직 처리 함수
+def handle_file_upload(request):
+    try:
+        pre_bucket = settings.AWS_STORAGE_PRE_BUCKET_NAME
+        fore_bucket = settings.AWS_STORAGE_FORE_BUCKET_NAME
+        data = MaliciousResult.objects.values('check_time', 'filename', 'mal_rate').first()
+        filename = data.get('filename')
+
+        # 파일 복사 및 업로드 로직 수행
+        delete_files_bucket(fore_bucket)
+        copy_source = {
+            'Bucket': pre_bucket,
+            'Key': filename
+        }
+        s3.copy(copy_source, fore_bucket, filename)
+        #delete_files_bucket(pre_bucket)
+
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
 
 
 # admin_page의 chart.js를 위한 데이터 전송 / AI 탐지 결과물의 시각화
@@ -165,6 +198,7 @@ def reset_result(request):
         return redirect('admin_page') 
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 
 # admin_page 로드

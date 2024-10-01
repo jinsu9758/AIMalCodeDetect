@@ -82,11 +82,11 @@
 <main class="l-main">
   <div class="content-wrapper content-wrapper--with-bg">
     <div class="page-title">
-      <h1><b>배포 파일 업로드</b></h1>
-      <h3>업로드 버튼을 누르면 악성 파일인지 체크하고 업로드를 진행합니다.</h3>
-      <form method="post" enctype="multipart/form-data" action="{% url 'file_upload' %}">
+      <h1><b>배포 파일 분석</b></h1>
+      <h3>파일 분석 버튼을 누르면 AI가 악성 파일인지 분석합니다.</h3>
+      <form method="post" enctype="multipart/form-data" action="{% url 'file_analysis' %}">
         {{ form.as_p }}
-        <button type="submit" style="background-color:#184a98">업로드</button>
+        <button type="submit" style="background-color:#184a98">파일 분석</button>
       </form>
       {% if message %}
         <script>
@@ -137,7 +137,6 @@
               })
               .catch(error => console.error('Error fetching chart data:', error));  // 오류 처리
       </script>
-      
         <style>
           #chartContainer {
             width: 45%;
@@ -151,6 +150,62 @@
     </div>
     <div style="text-align: center;">
       <a href="{% url 'reset_result' %}" style="margin-top: 10px; display: inline-block; padding: 10px 15px; background-color: #184a98; color: white; text-decoration: none; border-radius: 3px;">초기화</a>
+      <a id="uploadButton" style="margin-top: 10px; display: inline-block; padding: 10px 15px; background-color: #184a98; color: white; text-decoration: none; border-radius: 3px; cursor: pointer;">업로드</a>
+
+      <script>
+        document.getElementById("uploadButton").addEventListener("click", function(event) {
+          event.preventDefault();  // 기본 제출 동작을 막음
+          
+          // 서버에서 mal_rate 데이터를 받아옴
+          fetch('/api/chart-data/')
+              .then(response => response.json())
+              .then(data => {
+                  const malRate = data.datasets[0].data[0];  // mal_rate가 첫 번째 데이터에 있다고 가정
+                  console.log("Mal Rate:", malRate);
+      
+                  if (malRate <= 10) {
+                      // mal_rate가 10 이하인 경우 자동으로 파일 업로드 수행
+                      uploadFile(malRate);
+                  } else if (malRate >= 90) {
+                      // mal_rate가 90 이상이면 업로드를 막음
+                      alert("악성 비율이 90% 이상입니다. 파일을 업로드할 수 없습니다.");
+                  } else {
+                      // 10 < mal_rate < 90인 경우, 사용자에게 업로드 여부를 묻는 창을 표시
+                      const userDecision = confirm("파일 악성 비율이 " + malRate + "%입니다. 파일을 업로드하시겠습니까?");
+                      
+                      if (userDecision) {
+                          uploadFile(malRate);  // 사용자가 '네'를 선택하면 업로드 수행
+                      } else {
+                          alert("파일 업로드가 취소되었습니다.");
+                      }
+                  }
+              })
+              .catch(error => console.error('Error fetching chart data:', error));
+        });
+      
+        // 파일 업로드 함수
+        function uploadFile(malRate) {
+            fetch("{% url 'confirm_upload' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",  // Django의 CSRF 토큰 처리
+                },
+                body: JSON.stringify({ mal_rate: malRate })  // 서버에 mal_rate 값을 전달
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("파일 업로드가 완료되었습니다.");
+                    window.location.href = "{% url 'admin_page' %}";
+                } else {
+                    alert("파일 업로드에 실패했습니다: " + data.error);
+                }
+            })
+            .catch(error => console.error('Error during file upload:', error));
+        }
+      </script>
+      
     </div>
   </div>
 </main>
