@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Change Password</title>
+  <link rel='stylesheet' href='https://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css'>
+  <link rel="stylesheet" href="{% static 'users/css/style3.css' %}">
+
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+  <div class="container px-4">
+      <a class="navbar-brand" href="/">AMOIN SOFTWARE</a>
+
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+<!-- partial:index.partial.html -->
+<div class="wrapper">
+    <form method="post" action="{% url 'users:changepw' %}" class="form-signin">
+      {% include "form_errors.html" %}
+      <h2 class="form-signin-heading" style="text-align: center;"><b>Change Password</b></h2>
+      <input type="password" class="form-control" name="old_password" placeholder="Old Password" required="" autofocus="" />
+      <br>
+      <input type="password" class="form-control" name="new_password1" placeholder="New Password" required=""/>     
+      <br>
+      <input type="password" class="form-control" id="confirm-new-password" name="new_password2" placeholder="Confirm New Password" required=""/>     
+      <!-- <label class="checkbox">
+        <input type="checkbox" value="remember-me" id="rememberMe" name="rememberMe"> Remember me
+      </label>
+    -->
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>   
+    </form>
+  </div>
+<!-- partial -->
+  
+</body>
+</html>

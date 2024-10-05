@@ -8,6 +8,7 @@
 // 
 
 window.addEventListener('DOMContentLoaded', event => {
+    
 
     // Activate Bootstrap scrollspy on the main nav element
     const mainNav = document.body.querySelector('#mainNav');
@@ -30,5 +31,19 @@ window.addEventListener('DOMContentLoaded', event => {
             }
         });
     });
+    document.addEventListener('click', function togglebutton() {
+        const popup = document.getElementById('profile-popup');
+        popup.classList.toggle('hidden');
+    });
+    
+    window.onclick = function(event) {
+        const popup = document.getElementById('profile-popup');
+        const nickname = document.getElementById("nickname");
+
+        if (!popup.contains(event.target) && !nickname.contains(event.target)) {
+            popup.classList.add('hidden'); // 팝업을 숨김 처리
+        }
+    };
 
 });
+

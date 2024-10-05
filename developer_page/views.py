@@ -65,14 +65,14 @@ def file_analysis_view(request):
                     delete_files_bucket(settings.AWS_STORAGE_PRE_BUCKET_NAME)
                     s3.upload_fileobj(uploaded_file, settings.AWS_STORAGE_PRE_BUCKET_NAME, uploaded_file.name)
                     request.session['message'] = "잠시후에 새로고침을 해주세요"
-                    return redirect('admin_page')
+                    return redirect('developer_page')
 
                 except Exception as e:
                     request.session['message'] = f"S3 업로드 오류: {str(e)}"
-                    return redirect('admin_page')
+                    return redirect('developer_page')
             else:
                 request.session['message'] = "PE파일만 업로드할 수 있습니다."
-                return redirect('admin_page')
+                return redirect('developer_page')
 
     else:
         form = FileUploadForm()
@@ -153,7 +153,7 @@ def handle_file_upload(request):
 
 
 
-# admin_page의 chart.js를 위한 데이터 전송 / AI 탐지 결과물의 시각화
+# developer_page의 chart.js를 위한 데이터 전송 / AI 탐지 결과물의 시각화
 def get_chart_data(request):
     data = MaliciousResult.objects.values('check_time', 'filename', 'mal_rate')
 
@@ -185,8 +185,10 @@ def get_chart_data(request):
                 }
             }
         }
-
-    return JsonResponse(chart_data)
+        return JsonResponse(chart_data)
+    else:
+        chart_data = {}
+        return JsonResponse(chart_data)
 
 
 
@@ -195,15 +197,19 @@ def get_chart_data(request):
 def reset_result(request):
     if request.method == 'GET':
         MaliciousResult.objects.all().delete()
-        return redirect('admin_page') 
+        return redirect('developer_page') 
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 
-# admin_page 로드
+# developer_page 로드
 @csrf_exempt
-def admin_page(request):
+def developer_page(request):
+    if request.user.is_authenticated is False:
+        return redirect('/')
+    if request.user.is_uploader is False:
+        return redirect('/')
     form = FileUploadForm()
     message = request.session.pop('message', None)
-    return render(request, 'admin_page.html', {'form': form, 'message': message})
+    return render(request, 'developer_page.html', {'form': form, 'message': message})

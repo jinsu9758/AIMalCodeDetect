@@ -23,7 +23,27 @@
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
                         <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item"><div class="nav-link">
+                            <span class="nickname" id="nickname" onclick="togglebutton()">{{ request.user.nickname }}</span> 
+                            <div id= "profile-popup" class="profile-popup hidden">
+                                <div id= "popup-content" class="popup-content">
+                                    <ul>
+                                        {% if user.is_uploader is True %}
+                                        <li><a href="/developer_page">developer_page</a></li>
+                                        <li><a href="/changepw">change password</a></li>
+                                        <li><a href="/logout">Logout</a></li>
+                                        {% else %}
+                                        <li><a href="/changepw">change password</a></li>
+                                        <li><a href="/logout">Logout</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div></li>
+                        {% else %}
                         <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
