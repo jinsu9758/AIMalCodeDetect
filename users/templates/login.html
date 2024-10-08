@@ -10,9 +10,11 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+  <!--
   <div class="container px-4">
     <a class="navbar-brand" href="/">AMOIN SOFTWARE</a>
-
+  </div>
+  -->
 <!-- partial:index.partial.html -->
 <div class="wrapper">
     <form method="post" action="{% url 'users:login' %}" class="form-signin">    
@@ -25,7 +27,8 @@
       </label>
       <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>   
       <div style="text-align: center; margin-top: 20px;">
-        <a href="/signup">Sign Up</a>
+        <a href="/signup" style="display: inline-block; margin-right: 20px;">Sign Up</a>
+        <a href="/" style="display: inline-block;">Back to main page</a>
       </div>
     </form>
   </div>
