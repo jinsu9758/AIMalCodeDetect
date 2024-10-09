@@ -11,10 +11,11 @@
 
 - https://hybrid-analysis.com/submissions/quick-scan/files 
 - 위 사이트에서 샘플 다운로드 해옴. (일 150 ~ 200 개)
+- 계정 정보는 지워 놓았음. 필요하다면 받아가시기 바람.
 - **Cookie** 값이 주기적으로 변경 되기 때문에 파일 다운로드 받을때 requests 잡아서 cookie의 id값을 변경해줘야 함.
 
 - 크롤링하면 sample/ 에 .gz 형태로 sample이 다운로드가 됨.
-- PE 파일만 받아오도록 수정 완료.
+- PE 파일만 받아오도록 수정.
 
 ## 2_extract_gz.py
 
@@ -25,6 +26,7 @@
 
 (requirements.txt → aiofiles, aiohttp)
 
+- API-KEY 입력 해야함.
 - 비동기 처리해서 속도 향상함.
 
 | **Access level** | **Limited**, standard free public API[Upgrade to premium](https://www.virustotal.com/gui/contact-us/premium-services) |
@@ -36,6 +38,8 @@
 
 - 여기도 대문자 이름으로 만든 샘플 때려넣음.
 - 파일에는 실질적인 벤더사가 판별한 malicious, undetected가 있는 stats 객체만 json/ 경로에 파일로 저장함.
+
+
 
 
 # 위 과정을 거치면 Malconv에 학습시킬 수 있는 데이터셋이 1단계 완성된다.
