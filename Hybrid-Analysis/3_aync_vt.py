@@ -3,7 +3,7 @@ import asyncio
 import aiofiles  # 비동기 파일 처리를 위한 라이브러리
 import json
 
-api_key = "API-KEY"
+api_key = "328f86764abe3a3565fbcfb8fa2490b7d6b20dca6d1f9c673dc5a897948d6d03"
 url = "https://www.virustotal.com/api/v3/files"
 
 # 요청 제한을 위한 세마포어 (동시 요청 수를 4개로 제한)
