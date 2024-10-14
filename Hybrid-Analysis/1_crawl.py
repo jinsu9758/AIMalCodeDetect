@@ -74,7 +74,7 @@ def download_samples(session, hash_data, log_filename, train_filename):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.120 Safari/537.36',
         'Accept-Language': 'ko-KR,ko;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
-        'Cookie': 'id=CHANGE_COOKIE_VALUE;'  
+        'Cookie': 'id=frmdktkcop8ipqbp22to9f82tc;'  
     }
 
     for submission_name, hash_value, timestamp in hash_data:
@@ -103,8 +103,8 @@ def download_samples(session, hash_data, log_filename, train_filename):
 
 def main():
     session = requests.Session()
-    username = 'USER_NAME'
-    password = 'PASSWORD'
+    username = ''
+    password = ''
 
     if login(session, username, password):
         print("로그인 성공")

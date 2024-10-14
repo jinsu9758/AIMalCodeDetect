@@ -3,7 +3,7 @@ import asyncio
 import aiofiles  # 비동기 파일 처리를 위한 라이브러리
 import json
 
-api_key = "328f86764abe3a3565fbcfb8fa2490b7d6b20dca6d1f9c673dc5a897948d6d03"
+api_key = ""
 url = "https://www.virustotal.com/api/v3/files"
 
 # 요청 제한을 위한 세마포어 (동시 요청 수를 4개로 제한)
@@ -75,6 +75,7 @@ async def upload_and_analyze(session, i):
                 else:
                     print(f"Failed to upload file. Status code: {response.status}")
                     print(await response.text())  # 추가적인 오류 메시지 출력
+                    exit()
 
 # 비동기로 파일 처리 작업을 수행하는 메인 함수
 async def main():
