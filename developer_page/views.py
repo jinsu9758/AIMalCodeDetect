@@ -57,7 +57,7 @@ def file_analysis_view(request):
             uploaded_file = request.FILES['file']
             file_extension = os.path.splitext(uploaded_file.name)[1].lower()
 
-            valid_extension = ['.acm', '.ax', '.cpl', '.dll', '.drv', '.efi', '.exe', '.mui', '.ocx', '.scr', '.sys', '.tsp']
+            valid_extension = ['.zip', '.acm', '.ax', '.cpl', '.dll', '.drv', '.efi', '.exe', '.mui', '.ocx', '.scr', '.sys', '.tsp']
 
             if file_extension in valid_extension:
                 try:
@@ -71,7 +71,7 @@ def file_analysis_view(request):
                     request.session['message'] = f"S3 업로드 오류: {str(e)}"
                     return redirect('developer_page')
             else:
-                request.session['message'] = "PE파일만 업로드할 수 있습니다."
+                request.session['message'] = "ZIP파일 또는 PE파일만 업로드할 수 있습니다."
                 return redirect('developer_page')
 
     else:
@@ -85,16 +85,30 @@ def recieve_result(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            mal_rate = data.get('mal_rate')
-            filename = data.get('filename')
+            success_data = data.get('success', {})
+            fail_data = data.get('fail', [])
+
+            # 기존 데이터 삭제
+            MaliciousResult.objects.all().delete()
             
-            # 결과 값을 받으면 로컬 sqlitedb에 해당 데이터를 저장
-            if mal_rate is not None and filename is not None:
-                MaliciousResult.objects.all().delete()
-                result = MaliciousResult.objects.create(filename=filename, mal_rate=mal_rate)
-                return JsonResponse({'status': 'success', 'id': result.id}, status=201)
-            else:
-                return JsonResponse({'error': 'mal_rate not provided'}, status=400)
+            # 성공한 파일 데이터를 저장
+            for filename, mal_rate in success_data.items():
+                if mal_rate is not None and filename:
+                    MaliciousResult.objects.create(
+                        filename=filename,
+                        mal_rate=mal_rate,
+                        is_success=True
+                    )
+
+            # 실패한 파일 데이터를 저장
+            for filename in fail_data:
+                MaliciousResult.objects.create(
+                    filename=filename,
+                    mal_rate=None,  # 실패한 파일이므로 mal_rate는 없음
+                    is_success=False
+                )
+
+            return JsonResponse({'status': 'success'}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
@@ -151,45 +165,70 @@ def handle_file_upload(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
-
-
-# developer_page의 chart.js를 위한 데이터 전송 / AI 탐지 결과물의 시각화
 def get_chart_data(request):
-    data = MaliciousResult.objects.values('check_time', 'filename', 'mal_rate')
+    # is_success가 True인 데이터 필터링
+    data = MaliciousResult.objects.filter(is_success=True).values('check_time', 'filename', 'mal_rate')
 
     if data.exists():
-        item = data.first()  # 첫 번째 항목 가져오기
-        mal_rate = item['mal_rate']
-        filename = item['filename']  # filename 가져오기
-        
         chart_data = {
-            'labels': ['Malware Detected', 'Non-Malware Detected'],  # 각 항목에 대한 레이블
-            'datasets': [{
-                'data': [mal_rate, 100 - mal_rate],  # 악성 비율과 정상 비율 데이터
-                'backgroundColor': [
-                    'rgba(255, 99, 132, 0.2)',  # 악성 비율 색상
-                    'rgba(54, 162, 235, 0.2)',  # 정상 비율 색상
-                ],
-                'borderColor': [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                ],
-                'borderWidth': 1,  # 테두리 두께
-            }],
+            'labels': [],  # 각 파일의 레이블 (파일 이름)
+            'datasets': [
+                {  # 악성 비율 데이터셋
+                    'label': 'Malware Detected',
+                    'data': [],  # 파일별 악성 비율 데이터
+                    'backgroundColor': 'rgba(255, 99, 132, 0.2)',
+                    'borderColor': 'rgba(255, 99, 132, 1)',
+                    'borderWidth': 1,
+                },
+                {  # 정상 비율 데이터셋
+                    'label': 'Non-Malware Detected',
+                    'data': [],  # 파일별 정상 비율 데이터
+                    'backgroundColor': 'rgba(54, 162, 235, 0.2)',
+                    'borderColor': 'rgba(54, 162, 235, 1)',
+                    'borderWidth': 1,
+                }
+            ],
             'options': {
                 'plugins': {
                     'title': {
                         'display': True,
-                        'text': f'{filename} AI 분석 결과'  # filename을 제목으로 사용
+                        'text': 'AI 분석 결과'  # 제목
                     }
                 }
             }
         }
+
+        # 각 항목에 대해 반복하며 데이터를 추가
+        for item in data:
+            mal_rate = item['mal_rate']
+            filename = item['filename']
+
+            # 파일 이름을 레이블로 추가
+            chart_data['labels'].append(f'{filename}')
+
+            # 악성 비율 데이터를 추가
+            chart_data['datasets'][0]['data'].append(mal_rate)
+
+            # 정상 비율 데이터를 추가 (100에서 악성 비율을 뺀 값)
+            chart_data['datasets'][1]['data'].append(100 - mal_rate)
+
         return JsonResponse(chart_data)
     else:
+        # 성공한 데이터가 없을 경우
         chart_data = {}
         return JsonResponse(chart_data)
 
+
+def get_table_data(request):
+    # 전체 데이터를 가져옴 (필요에 따라 성공/실패 데이터로 나눌 수 있음)
+    success_data = MaliciousResult.objects.filter(is_success=True).values('check_time', 'filename', 'mal_rate')
+    fail_data = MaliciousResult.objects.filter(is_success=False).values('check_time', 'filename', 'mal_rate')
+
+    table_data = {
+        'success': list(success_data),
+        'fail': list(fail_data)
+    }
+    return JsonResponse(table_data)
 
 
 # 시각화한 결과물을 초기화(삭제) 시키기
