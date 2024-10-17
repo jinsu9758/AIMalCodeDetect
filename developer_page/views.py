@@ -122,20 +122,24 @@ def confirm_upload_view(request):
         try:
             # JavaScript에서 보낸 JSON 데이터를 파싱
             data = json.loads(request.body)
-            mal_rate = data.get('mal_rate')
+            files = data.get('files')  # 여러 파일 정보가 담긴 리스트
 
-            if mal_rate is not None:
-                # mal_rate가 10 이하일 때 자동 파일 업로드 로직
-                if mal_rate <= 10:
-                    return handle_file_upload(request)
-                # mal_rate가 90 이상일 때 업로드 불가 응답
-                elif mal_rate >= 90:
-                    return JsonResponse({'success': False, 'error': 'mal_rate is too high'})
-                # 10 < mal_rate < 90 사이일 때 사용자 결정을 이미 JavaScript에서 받았으므로 바로 업로드
-                else:
-                    return handle_file_upload(request)
+            if files is not None:
+                for file_data in files:
+                    mal_rate = file_data.get('malRate')
+                    filename = file_data.get('filename')
+
+                    if mal_rate is None:
+                        return JsonResponse({'success': False, 'error': f'{filename}: mal_rate is missing'})
+
+                    # mal_rate가 90 이상인 파일이 하나라도 있으면 업로드를 차단
+                    if mal_rate >= 60:
+                        return JsonResponse({'success': False, 'error': f'{filename}: mal_rate is too high'})
+
+                # 모든 파일이 업로드 가능한 상태일 때만 업로드 처리
+                return handle_file_upload(request)  # 다중 파일 업로드 처리 함수 호출
             else:
-                return JsonResponse({'success': False, 'error': 'mal_rate is missing'})
+                return JsonResponse({'success': False, 'error': 'No files provided'})
 
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'error': 'Invalid JSON'})
@@ -148,22 +152,31 @@ def handle_file_upload(request):
     try:
         pre_bucket = settings.AWS_STORAGE_PRE_BUCKET_NAME
         fore_bucket = settings.AWS_STORAGE_FORE_BUCKET_NAME
-        data = MaliciousResult.objects.values('check_time', 'filename', 'mal_rate').first()
-        filename = data.get('filename')
 
-        # 파일 복사 및 업로드 로직 수행
+        # pre_bucket의 모든 파일을 가져옴
+        objects = s3.list_objects_v2(Bucket=pre_bucket)
         delete_files_bucket(fore_bucket)
-        copy_source = {
-            'Bucket': pre_bucket,
-            'Key': filename
-        }
-        s3.copy(copy_source, fore_bucket, filename)
-        #delete_files_bucket(pre_bucket)
+        if 'Contents' in objects:
+            # 각 파일을 fore_bucket으로 복사
+            for obj in objects['Contents']:
+                filename = obj['Key']
+                copy_source = {
+                    'Bucket': pre_bucket,
+                    'Key': filename
+                }
 
-        return JsonResponse({'success': True})
+                # 파일을 fore_bucket으로 복사
+                s3.copy(copy_source, fore_bucket, filename)
+
+        else:
+            return JsonResponse({'success': False, 'error': 'No files found in the pre_bucket'})
+
+        return JsonResponse({'success': True, 'message': 'All files have been copied successfully'})
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+    
+
 
 def get_chart_data(request):
     # is_success가 True인 데이터 필터링
@@ -179,6 +192,7 @@ def get_chart_data(request):
                     'backgroundColor': 'rgba(255, 99, 132, 0.2)',
                     'borderColor': 'rgba(255, 99, 132, 1)',
                     'borderWidth': 1,
+                    'stack': 'Stack 0',  # 스택 그룹 지정
                 },
                 {  # 정상 비율 데이터셋
                     'label': 'Non-Malware Detected',
@@ -186,6 +200,7 @@ def get_chart_data(request):
                     'backgroundColor': 'rgba(54, 162, 235, 0.2)',
                     'borderColor': 'rgba(54, 162, 235, 1)',
                     'borderWidth': 1,
+                    'stack': 'Stack 0',  # 동일한 스택 그룹
                 }
             ],
             'options': {
@@ -193,6 +208,14 @@ def get_chart_data(request):
                     'title': {
                         'display': True,
                         'text': 'AI 분석 결과'  # 제목
+                    }
+                },
+                'scales': {
+                    'x': {
+                        'stacked': True  # X축에서 스택 활성화
+                    },
+                    'y': {
+                        'stacked': True  # Y축에서 스택 활성화
                     }
                 }
             }
@@ -211,7 +234,7 @@ def get_chart_data(request):
 
             # 정상 비율 데이터를 추가 (100에서 악성 비율을 뺀 값)
             chart_data['datasets'][1]['data'].append(100 - mal_rate)
-
+        
         return JsonResponse(chart_data)
     else:
         # 성공한 데이터가 없을 경우

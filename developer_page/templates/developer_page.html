@@ -221,8 +221,8 @@
                       }
                     },
                     datalabels: {  // 여기에서 플러그인 사용
-                      anchor: 'end',  // 라벨 위치
-                      align: 'end',   // 라벨 정렬
+                      anchor: 'center',  // 라벨 위치
+                      align: 'center',   // 라벨 정렬
                       formatter: function(value) {
                         return value.toFixed(2) + '%';  // 값에 % 표시
                       },
@@ -261,50 +261,62 @@
           fetch('/api/chart-data/')
               .then(response => response.json())
               .then(data => {
-                  const malRate = data.datasets[0].data[0];  // mal_rate가 첫 번째 데이터에 있다고 가정
-                  console.log("Mal Rate:", malRate);
+                  const malRates = data.datasets[0].data;  // 모든 파일의 mal_rate 데이터
+                  const filenames = data.labels;  // 각 파일의 이름
+                  let isUploadBlocked = false;
+                  let filesToUpload = [];  // 업로드할 파일 목록
+                  
+                  // 각 파일의 mal_rate 검사
+                  for (let i = 0; i < malRates.length; i++) {
+                      const malRate = malRates[i];
+                      const filename = filenames[i];  // 해당 파일 이름
       
-                  if (malRate <= 10) {
-                      // mal_rate가 10 이하인 경우 자동으로 파일 업로드 수행
-                      uploadFile(malRate);
-                  } else if (malRate >= 90) {
-                      // mal_rate가 90 이상이면 업로드를 막음
-                      alert("악성 비율이 90% 이상입니다. 파일을 업로드할 수 없습니다.");
-                  } else {
-                      // 10 < mal_rate < 90인 경우, 사용자에게 업로드 여부를 묻는 창을 표시
-                      const userDecision = confirm("파일 악성 비율이 " + malRate + "%입니다. 파일을 업로드하시겠습니까?");
+                      if (malRate >= 60) {
+                          // mal_rate가 60% 이상인 파일이 있으면 업로드를 차단
+                          alert(`파일 "${filename}"의 악성 비율이 60% 이상입니다. 파일을 업로드할 수 없습니다.`);
+                          isUploadBlocked = true;
+                          break;  // 업로드 차단 후 반복 종료
+                      } else {
+                          // mal_rate < 60인 파일을 업로드 목록에 추가
+                          filesToUpload.push({ filename, malRate });
+                      }
+                  }
+      
+                  // 악성 비율이 60% 이상인 파일이 없을 때만 업로드 여부를 묻는다
+                  if (!isUploadBlocked && filesToUpload.length > 0) {
+                      const userDecision = confirm(`모든 파일의 악성 비율이 60% 미만입니다. 파일을 업로드하시겠습니까?`);
                       
                       if (userDecision) {
-                          uploadFile(malRate);  // 사용자가 '네'를 선택하면 업로드 수행
+                          uploadFiles(filesToUpload);  // 사용자가 확인한 경우 업로드 수행
                       } else {
                           alert("파일 업로드가 취소되었습니다.");
                       }
                   }
               })
               .catch(error => console.error('Error fetching chart data:', error));
-        });
+      });
       
-        // 파일 업로드 함수
-        function uploadFile(malRate) {
-            fetch("{% url 'confirm_upload' %}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}",  // Django의 CSRF 토큰 처리
-                },
-                body: JSON.stringify({ mal_rate: malRate })  // 서버에 mal_rate 값을 전달
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("파일 업로드가 완료되었습니다.");
-                    window.location.href = "{% url 'developer_page' %}";
-                } else {
-                    alert("파일 업로드에 실패했습니다: " + data.error);
-                }
-            })
-            .catch(error => console.error('Error during file upload:', error));
-        }
+      // 파일 업로드 함수
+      function uploadFiles(filesToUpload) {
+          fetch("{% url 'confirm_upload' %}", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": "{{ csrf_token }}",  // Django의 CSRF 토큰 처리
+              },
+              body: JSON.stringify({ files: filesToUpload })  // 서버에 업로드할 파일 목록과 mal_rate 값 전달
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert("파일 업로드가 완료되었습니다.");
+                  window.location.href = "{% url 'developer_page' %}";
+              } else {
+                  alert("파일 업로드에 실패했습니다: " + data.error);
+              }
+          })
+          .catch(error => console.error('Error during file upload:', error));
+      }      
       </script>
       
     </div>
