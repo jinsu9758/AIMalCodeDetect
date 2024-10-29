@@ -96,7 +96,7 @@ def recieve_result(request):
                 if mal_rate is not None and filename:
                     MaliciousResult.objects.create(
                         filename=filename,
-                        mal_rate=mal_rate,
+                        mal_rate=mal_rate * 100,
                         is_success=True
                     )
 
