@@ -50,7 +50,7 @@ $ git clone https://github.com/jinsu9758/AIMalCodeDetect.git
 ```
 
 ***필요한 파일 추가***
-※ 개인정보 보안상 넣지 github에는 넣지 않았습니다.
+※ 개인정보 보안상 github에는 넣지 않았습니다.
 - media 폴더 생성 (project 폴더와 동일위치)
 - settings.py 생성 및 설정 (설정 일부분만을 다루고 있습니다.)
 ```
