@@ -133,7 +133,7 @@ def confirm_upload_view(request):
                         return JsonResponse({'success': False, 'error': f'{filename}: mal_rate is missing'})
 
                     # mal_rate가 90 이상인 파일이 하나라도 있으면 업로드를 차단
-                    if mal_rate >= 60:
+                    if mal_rate >= 70:
                         return JsonResponse({'success': False, 'error': f'{filename}: mal_rate is too high'})
 
                 # 모든 파일이 업로드 가능한 상태일 때만 업로드 처리
