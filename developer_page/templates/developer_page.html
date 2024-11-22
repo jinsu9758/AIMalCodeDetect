@@ -271,20 +271,20 @@
                       const malRate = malRates[i];
                       const filename = filenames[i];  // 해당 파일 이름
       
-                      if (malRate >= 70) {
-                          // mal_rate가 70% 이상인 파일이 있으면 업로드를 차단
-                          alert(`파일 "${filename}"의 악성 비율이 70% 이상입니다. 파일을 업로드할 수 없습니다.`);
+                      if (malRate >= 60) {
+                          // mal_rate가 60% 이상인 파일이 있으면 업로드를 차단
+                          alert(`파일 "${filename}"의 악성 비율이 60% 이상입니다. 파일을 업로드할 수 없습니다.`);
                           isUploadBlocked = true;
                           break;  // 업로드 차단 후 반복 종료
                       } else {
-                          // mal_rate < 70인 파일을 업로드 목록에 추가
+                          // mal_rate < 60인 파일을 업로드 목록에 추가
                           filesToUpload.push({ filename, malRate });
                       }
                   }
       
-                  // 악성 비율이 70% 이상인 파일이 없을 때만 업로드 여부를 묻는다
+                  // 악성 비율이 60% 이상인 파일이 없을 때만 업로드 여부를 묻는다
                   if (!isUploadBlocked && filesToUpload.length > 0) {
-                      const userDecision = confirm(`모든 파일의 악성 비율이 70% 미만입니다. 파일을 업로드하시겠습니까?`);
+                      const userDecision = confirm(`모든 파일의 악성 비율이 60% 미만입니다. 파일을 업로드하시겠습니까?`);
                       
                       if (userDecision) {
                           uploadFiles(filesToUpload);  // 사용자가 확인한 경우 업로드 수행
